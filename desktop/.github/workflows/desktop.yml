@@ -1,0 +1,35 @@
+name: Build Deenstudio Desktop
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download adb
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://dl.google.com/android/repository/platform-tools-latest-windows.zip -OutFile pt.zip
+          Expand-Archive pt.zip -DestinationPath pt
+          Copy-Item pt/platform-tools/adb.exe adb/
+          Copy-Item pt/platform-tools/AdbWinApi.dll adb/
+          Copy-Item pt/platform-tools/AdbWinUsbApi.dll adb/
+
+      - run: npm install
+      - run: npm run dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Deenstudio-Desktop-Windows
+          path: desktop/dist/Deenstudio-Desktop.exe
