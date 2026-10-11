@@ -1,0 +1,28 @@
+{
+  "name": "deenstudio-desktop",
+  "version": "1.0.0",
+  "description": "Deenstudio desktop receiver: phone camera over USB to your PC and OBS",
+  "main": "main.js",
+  "author": "Deenstudio",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/annexb.test.js",
+    "dist": "electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.deenstudio.desktop",
+    "productName": "Deenstudio",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "lib/**", "renderer/**"],
+    "extraResources": [{ "from": "adb", "to": "adb" }],
+    "win": {
+      "target": ["portable"],
+      "artifactName": "Deenstudio-Desktop.${ext}"
+    }
+  }
+}

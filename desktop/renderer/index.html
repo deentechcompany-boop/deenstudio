@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: blob:">
+  <title>Deenstudio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="stage" id="stage">
+      <canvas id="video" width="1280" height="720"></canvas>
+      <div class="pill" id="pill"><span class="led" id="led"></span><span id="pillText">Starting…</span></div>
+      <div class="overlay" id="overlay">
+        <div class="overlay-title" id="overlayTitle">Starting…</div>
+        <div class="overlay-body" id="overlayBody"></div>
+      </div>
+      <div class="readout" id="readout"></div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <header>
+        <h1>Deenstudio</h1>
+        <p>Phone camera to your PC over USB</p>
+      </header>
+
+      <section class="card">
+        <h2>Connection</h2>
+        <ul class="steps">
+          <li><span class="dot" id="dAdb"></span><div><b>Desktop tools</b><small id="tAdb"></small></div></li>
+          <li><span class="dot" id="dDev"></span><div><b>Phone</b><small id="tDev"></small></div></li>
+          <li><span class="dot" id="dTun"></span><div><b>USB tunnel</b><small id="tTun"></small></div></li>
+          <li><span class="dot" id="dStr"></span><div><b>Video</b><small id="tStr"></small></div></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Live stats</h2>
+        <dl class="stats">
+          <div><dt>Resolution</dt><dd id="sRes">–</dd></div>
+          <div><dt>Frame rate</dt><dd id="sFps">–</dd></div>
+          <div><dt>Bitrate</dt><dd id="sBit">–</dd></div>
+          <div><dt>Dropped here</dt><dd id="sDrop">0</dd></div>
+          <div><dt>OBS viewers</dt><dd id="sObs">0</dd></div>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Send to OBS</h2>
+        <p class="hint">Add a <b>Media Source</b>, untick Local File, then:</p>
+        <div class="copyrow"><code>tcp://127.0.0.1:8001</code><button data-copy="tcp://127.0.0.1:8001">Copy</button></div>
+        <div class="copyrow"><span class="lbl">Input format</span><code>h264</code><button data-copy="h264">Copy</button></div>
+        <p class="hint">Keep this app open. It manages the cable and reconnects for you.</p>
+      </section>
+
+      <section class="card">
+        <h2>View</h2>
+        <div class="btnrow">
+          <button id="bMirror">Mirror</button>
+          <button id="bFlip">Rotate 180°</button>
+          <button id="bClean">Clean view</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

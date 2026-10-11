@@ -1,0 +1,54 @@
+:root {
+  --obsidian: #0A0C10; --panel: #11151C; --panel-hi: #1A2029; --line: #262E3B;
+  --neon: #35E0FF; --live: #2BFF88; --amber: #FFB020; --danger: #FF3D6E;
+  --text: #E8ECF2; --muted: #7C8798;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--obsidian); color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px; overflow: hidden; }
+.layout { display: grid; grid-template-columns: 1fr 340px; gap: 14px; padding: 14px; height: 100%; }
+.stage { position: relative; background: #000; border: 1px solid var(--line); border-radius: 20px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.stage.live { border-color: rgba(43,255,136,.7); }
+#video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; background: #000; }
+.pill { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,.66); padding: 7px 12px; border-radius: 999px; font-weight: 500; }
+.led { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+.led.green { background: var(--live); box-shadow: 0 0 12px var(--live); animation: pulse 1.2s ease-in-out infinite alternate; }
+.led.amber { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+@keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; padding: 40px; background: rgba(10,12,16,.82); }
+.overlay.hidden { display: none; }
+.overlay-title { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.overlay-body { color: var(--muted); max-width: 440px; line-height: 1.5; }
+.readout { position: absolute; left: 12px; bottom: 12px; font-family: Consolas, monospace; font-size: 12px;
+  background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 8px; }
+
+.panel { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; }
+header h1 { margin: 0; font-size: 22px; }
+header p { margin: 2px 0 4px; color: var(--muted); font-size: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.card h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.steps li { display: flex; gap: 10px; align-items: flex-start; }
+.steps small { display: block; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--line); }
+.dot.ok { background: var(--live); } .dot.warn { background: var(--amber); } .dot.bad { background: var(--danger); }
+.stats { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.stats div { display: flex; justify-content: space-between; }
+.stats dt { color: var(--muted); } .stats dd { margin: 0; font-family: Consolas, monospace; color: var(--neon); }
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0; line-height: 1.4; }
+.copyrow { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.copyrow code { flex: 1; background: var(--panel-hi); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 8px; font-family: Consolas, monospace; color: var(--neon); }
+.lbl { color: var(--muted); font-size: 12px; }
+button { background: var(--panel-hi); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
+  padding: 7px 12px; font: inherit; cursor: pointer; }
+button:hover { border-color: var(--neon); }
+button.on { border-color: var(--neon); color: var(--neon); background: rgba(53,224,255,.12); }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+
+body.clean .panel, body.clean .pill, body.clean .readout { display: none; }
+body.clean .layout { grid-template-columns: 1fr; padding: 0; gap: 0; }
+body.clean .stage { border: none; border-radius: 0; }
