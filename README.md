@@ -1,39 +1,23 @@
-# Deenstudio for Windows (v1.2)
+# Deenstudio for Android (v1.1)
 
-Plug in one or more phones (Android, and iPhone with the Deenstudio iPhone app). This app finds them, opens the USB connection for each,
-shows them together, and sends them to OBS or Prism.
+Phone camera and microphone to your PC over USB, for OBS, Prism, Zoom and more.
 
-## Run it (developer)
-    npm install
-    npm start
+New in 1.1
+- **Photo button** (round shutter on the preview). Photos are saved in Pictures > Deenstudio.
+- **Microphone switch**: sends the phone's sound to the Windows app (switch it before Start stream).
+- App icon.
 
-## Make the app folder to share (fast, recommended)
-    npm run pack
-The finished app is in `dist\win-unpacked`. Zip that folder; people extract it and open `Deenstudio.exe`.
-(`npm run dist` makes a single portable .exe instead, but it can hang on some PCs.)
+## Build
+Open this folder in Android Studio, or push it to GitHub and let the included workflow
+(`.github/workflows`) build `app-debug.apk` for you.
 
-## What goes to OBS
-| Want | In OBS add | Address |
-|---|---|---|
-| All phones merged into one picture | Browser Source, 1920 x 1080 | `http://127.0.0.1:8090/` |
-| Phone 1 picture on its own | Media Source, format `h264` | `tcp://127.0.0.1:8001` |
-| Phone 2, 3, 4... on their own | same | `tcp://127.0.0.1:8002`, `8003`, ... |
-| Phone N sound | Media Source, no format | `http://127.0.0.1:8090/audio/N.wav` |
+## Use
+1. Install the APK, allow Camera and Microphone.
+2. Turn on USB debugging, plug into the PC running the Deenstudio Windows app.
+3. Tap Start stream. The Windows app does the rest.
 
-Mute buttons in the app silence that phone's sound for OBS too.
-Prism Live Studio: use a Browser/Web source with the same addresses.
+Video is served on the phone at 127.0.0.1:8000 and sound at 127.0.0.1:8002 (loopback only,
+reached through the USB tunnel), so nothing is visible on Wi-Fi.
 
-## Files saved
-Photos and screenshots go to **Pictures > Deenstudio**.
-
-## Tests
-    npm test
-
-## One app, three jobs
-- **Devices tab**: every phone's picture, merged or separate, with Mute / Unmute, Mirror, Rotate 180 and Snap photo for each phone.
-- **Visual screen tab**: pick your OBS or Prism window (or a whole screen) and snap a screenshot.
-- **Top bar**: Snap phones (a photo from every live phone), Snap OBS / Prism, Mute all / Unmute all.
-
-## iPhone
-Install "Apple Devices" from the Microsoft Store (or iTunes), plug the iPhone in, tap Trust,
-open Deenstudio on the iPhone and tap Start stream.
+## Status
+Written without an Android SDK, so it is not compiled or run on a device yet.
