@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:">
+  <title>Deenstudio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><img src="logo.png" alt=""><div><b>Deenstudio</b><small>Phone cameras over USB</small></div></div>
+    <nav class="tabs">
+      <button class="tab on" data-tab="devices">Devices</button>
+      <button class="tab" data-tab="screen">Visual screen</button>
+    </nav>
+    <div class="quick">
+      <button id="qSnapPhones" title="Save a photo from every live phone">Snap phones</button>
+      <button id="qSnapScreen" title="Save a screenshot of your OBS or Prism picture">Snap OBS / Prism</button>
+      <button id="qMuteAll" class="warn" title="Mute or unmute every phone">Mute all</button>
+    </div>
+    <div class="top-status"><span class="led" id="topLed"></span><span id="topText">Starting…</span></div>
+  </header>
+
+  <!-- DEVICES -->
+  <main id="view-devices" class="view">
+    <section class="stage" id="stage">
+      <div class="canvas-wrap" id="wrap">
+        <canvas id="comp" width="1920" height="1080"></canvas>
+        <div id="tiles"></div>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="overlay-title" id="ovTitle">Starting…</div>
+        <div class="overlay-body" id="ovBody"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <section class="card">
+        <h2>Combined screen</h2>
+        <p class="hint">All your phones in one picture for OBS or Prism. Drag a picture onto another to swap places.</p>
+        <div class="btnrow" id="layoutBtns">
+          <button data-layout="grid">Grid</button>
+          <button data-layout="row">Row</button>
+          <button data-layout="column">Column</button>
+          <button data-layout="main">Main + side</button>
+        </div>
+        <div class="row">
+          <label class="sel">Size
+            <select id="resSel">
+              <option value="1920x1080">1920 × 1080</option>
+              <option value="1280x720">1280 × 720</option>
+            </select>
+          </label>
+          <button id="snapComp">Snap combined</button>
+        </div>
+        <p class="hint">In OBS add a <b>Browser Source</b>:</p>
+        <div class="copyrow"><code>http://127.0.0.1:8090/</code><button data-copy="http://127.0.0.1:8090/">Copy</button></div>
+        <p class="hint" id="hubInfo"></p>
+        <label class="check"><input type="checkbox" id="hear"> Hear the phones on this PC</label>
+      </section>
+
+      <div id="devices"></div>
+
+      <section class="card" id="helpCard">
+        <h2>Connection</h2>
+        <p class="hint" id="helpText"></p>
+      </section>
+    </aside>
+  </main>
+
+  <!-- VISUAL SCREEN -->
+  <main id="view-screen" class="view hidden">
+    <section class="stage">
+      <video id="screenVideo" autoplay muted playsinline></video>
+      <div class="overlay" id="screenOverlay">
+        <div class="overlay-title">Nothing selected yet</div>
+        <div class="overlay-body">Choose your OBS or Prism window, or a whole screen, to see it here and snap a screenshot.</div>
+      </div>
+    </section>
+    <aside class="panel">
+      <section class="card">
+        <h2>Visual screen</h2>
+        <p class="hint">Shows what is on your OBS or Prism picture so you can screenshot it.</p>
+        <div class="btnrow">
+          <button id="pickSource" class="primary">Choose window or screen</button>
+          <button id="snapScreen">Snap screenshot</button>
+        </div>
+        <p class="hint" id="screenInfo"></p>
+      </section>
+      <section class="card">
+        <h2>For the cleanest screenshot</h2>
+        <p class="hint">In OBS, right-click the preview and choose <b>Windowed Projector (Preview)</b>. Then choose that window here. It contains only your final picture with everything in it.</p>
+        <p class="hint">In Prism Live Studio or any other app, choose its window, or pick the whole screen.</p>
+        <p class="hint">Screenshots are saved to <b>Pictures › Deenstudio</b>.</p>
+      </section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Choose what to capture</h2>
+      <div id="sources" class="sources"></div>
+      <div class="btnrow"><button id="closeModal">Cancel</button></div>
+    </div>
+  </div>
+
+  <script src="pure.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
