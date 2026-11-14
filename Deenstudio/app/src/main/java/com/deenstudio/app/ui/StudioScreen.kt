@@ -54,15 +54,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import com.deenstudio.app.core.Resolution
 import com.deenstudio.app.core.StreamController
 import com.deenstudio.app.core.UiState
 import com.deenstudio.app.core.WhiteBalance
 import com.deenstudio.app.service.StreamService
 
-private fun requiredPermissions(): Array<String> =
-    if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS)
-    else arrayOf(Manifest.permission.CAMERA)
+private fun requiredPermissions(): Array<String> {
+    val p = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+    if (Build.VERSION.SDK_INT >= 33) p += Manifest.permission.POST_NOTIFICATIONS
+    return p.toTypedArray()
+}
 
 private data class Led(val color: Color, val text: String, val pulse: Boolean)
 
@@ -108,7 +111,12 @@ fun StudioScreen() {
             onAllowCamera = { permissionLauncher.launch(requiredPermissions()) },
             modifier = Modifier.weight(1f).fillMaxHeight()
         )
-        SidePanel(ui = ui, onToggle = onToggle, modifier = Modifier.width(330.dp).fillMaxHeight())
+        SidePanel(
+            ui = ui,
+            onToggle = onToggle,
+            onRequestMic = { permissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO)) },
+            modifier = Modifier.width(330.dp).fillMaxHeight()
+        )
     }
 }
 
@@ -170,6 +178,29 @@ private fun PreviewPane(ui: UiState, onAllowCamera: () -> Unit, modifier: Modifi
             }
         }
 
+        if (ui.photoAvailable) {
+            Box(
+                Modifier.align(Alignment.BottomEnd).padding(16.dp).size(64.dp)
+                    .clip(CircleShape).background(Color.White.copy(alpha = .12f))
+                    .border(3.dp, Color.White, CircleShape)
+                    .clickable { StreamController.takePhoto() },
+                contentAlignment = Alignment.Center
+            ) { Box(Modifier.size(46.dp).clip(CircleShape).background(Color.White)) }
+        }
+
+        ui.photoMessage?.let { msg ->
+            LaunchedEffect(msg) {
+                delay(2800)
+                StreamController.clearPhotoMessage()
+            }
+            Text(
+                msg, color = Studio.TextHi, fontSize = 13.sp,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp)
+                    .clip(RoundedCornerShape(10.dp)).background(Color(0xCC000000))
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            )
+        }
+
         ui.error?.let { msg ->
             Text(
                 msg, color = Color.White, fontSize = 13.sp,
@@ -205,7 +236,7 @@ private fun StatusPill(led: Led, modifier: Modifier = Modifier) {
 // --- side panel ------------------------------------------------------------------------------
 
 @Composable
-private fun SidePanel(ui: UiState, onToggle: () -> Unit, modifier: Modifier) {
+private fun SidePanel(ui: UiState, onToggle: () -> Unit, onRequestMic: () -> Unit, modifier: Modifier) {
     Column(modifier) {
         Text("Deenstudio", color = Studio.TextHi, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Phone camera to OBS over USB", color = Studio.TextLo, fontSize = 12.sp)
@@ -216,7 +247,7 @@ private fun SidePanel(ui: UiState, onToggle: () -> Unit, modifier: Modifier) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             MetricsCard(ui)
-            ControlsCard(ui)
+            ControlsCard(ui, onRequestMic)
         }
 
         Spacer(Modifier.height(10.dp))
@@ -260,7 +291,7 @@ private fun MetricRow(label: String, value: String, valueColor: Color) {
 }
 
 @Composable
-private fun ControlsCard(ui: UiState) = Card("Camera") {
+private fun ControlsCard(ui: UiState, onRequestMic: () -> Unit) = Card("Camera") {
     val s = ui.settings
 
     Label("Lens")
@@ -294,6 +325,50 @@ private fun ControlsCard(ui: UiState) = Card("Camera") {
                 StreamController.update { it.copy(fps = f) }
             }
         }
+    }
+
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Label("Microphone")
+            Text(
+                when {
+                    s.micOn && !ui.micPermission -> "Tap the switch to allow the mic"
+                    ui.streaming -> "Change it before you start the stream"
+                    else -> "Sends sound to the PC"
+                },
+                color = Studio.TextLo, fontSize = 11.sp
+            )
+        }
+        Switch(
+            checked = s.micOn && ui.micPermission,
+            enabled = !ui.streaming,
+            onCheckedChange = { on ->
+                if (on && !ui.micPermission) onRequestMic()
+                StreamController.update { it.copy(micOn = on) }
+            },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Studio.Obsidian, checkedTrackColor = Studio.Neon,
+                uncheckedThumbColor = Studio.TextLo, uncheckedTrackColor = Studio.PanelHi,
+                uncheckedBorderColor = Studio.Line
+            )
+        )
+    }
+
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Label(if (s.micMuted) "Mic is muted" else "Mute microphone")
+            Text("Works any time, even while streaming", color = Studio.TextLo, fontSize = 11.sp)
+        }
+        Switch(
+            checked = s.micMuted,
+            enabled = s.micOn && ui.micPermission,
+            onCheckedChange = { on -> StreamController.update { it.copy(micMuted = on) } },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Studio.Obsidian, checkedTrackColor = Studio.Danger,
+                uncheckedThumbColor = Studio.TextLo, uncheckedTrackColor = Studio.PanelHi,
+                uncheckedBorderColor = Studio.Line
+            )
+        )
     }
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

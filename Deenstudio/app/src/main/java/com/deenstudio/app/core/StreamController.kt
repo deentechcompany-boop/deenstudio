@@ -8,12 +8,15 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.BatteryManager
 import android.provider.Settings
+import android.util.Size
 import android.view.Surface
 import androidx.core.content.ContextCompat
+import com.deenstudio.app.audio.AudioStreamer
 import com.deenstudio.app.camera.CameraEngine
 import com.deenstudio.app.codec.H264Encoder
 import com.deenstudio.app.net.StreamServer
 import java.util.concurrent.Executors
+import kotlin.concurrent.thread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -35,6 +38,7 @@ object StreamController {
     private var camera: CameraEngine? = null
     private var encoder: H264Encoder? = null
     private var server: StreamServer? = null
+    private var audio: AudioStreamer? = null
     private var previewSurface: Surface? = null
     private var initialised = false
 
@@ -69,14 +73,16 @@ object StreamController {
         ui.update { it.copy(usbPlugged = plugged) }
     }
 
-    /** Re-reads permission and USB-debugging state; call from onResume. */
+    /** Re-reads permissions and USB-debugging state; call from onResume. */
     fun refreshEnvironment() {
         val ctx = appCtx ?: return
         val perm = ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED
+        val mic = ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
         val adb = Settings.Global.getInt(ctx.contentResolver, Settings.Global.ADB_ENABLED, 0) == 1
         val changedPerm = ui.value.cameraPermission != perm
-        ui.update { it.copy(cameraPermission = perm, adbEnabled = adb) }
+        ui.update { it.copy(cameraPermission = perm, micPermission = mic, adbEnabled = adb) }
         if (changedPerm && perm) worker.execute { reconcile(restartEncoder = false) }
     }
 
@@ -124,12 +130,37 @@ object StreamController {
         }
     }
 
+    // --- photos ---------------------------------------------------------------------------
+
+    fun takePhoto() {
+        worker.execute {
+            val cam = camera
+            val ctx = appCtx
+            if (cam == null || ctx == null) return@execute
+            val state = ui.value
+            cam.takePhoto(state.settings, state.streaming) photo@{ bytes, err ->
+                if (bytes == null) {
+                    say(err ?: "Photo failed")
+                    return@photo
+                }
+                // Write to storage off the camera thread.
+                thread(name = "deenstudio-photo-save", isDaemon = true) {
+                    val where = PhotoSaver.save(ctx, bytes)
+                    say(if (where != null) "Photo saved in $where" else "Could not save the photo")
+                }
+            }
+        }
+    }
+
+    private fun say(message: String) = ui.update { it.copy(photoMessage = message) }
+
+    fun clearPhotoMessage() = ui.update { it.copy(photoMessage = null) }
+
     // --- streaming ------------------------------------------------------------------------
 
     fun startStream() {
         worker.execute {
             if (ui.value.streaming) return@execute
-            val ctx = appCtx ?: return@execute
             if (!ui.value.cameraPermission) {
                 failLocked("Camera permission is required")
                 return@execute
@@ -141,6 +172,17 @@ object StreamController {
                 onClientConnected = { encoder?.requestKeyFrame() },
                 onFatal = { msg -> worker.execute { failLocked(msg) } }
             ).also { it.start() }
+
+            // Microphone is optional: if it cannot start, the video still streams.
+            audio?.stop()
+            audio = null
+            val st = ui.value
+            if (st.settings.micOn && st.micPermission) {
+                val a = AudioStreamer(AUDIO_PORT)
+                a.muted = st.settings.micMuted
+                audio = if (a.start()) a else null
+            }
+
             ui.update { it.copy(streaming = true, error = null, metrics = Metrics()) }
             reconcile(restartEncoder = true)
         }
@@ -153,6 +195,8 @@ object StreamController {
     private fun stopLocked() {
         server?.stop()
         server = null
+        audio?.stop()
+        audio = null
         encoder?.stop()
         encoder = null
         ui.update { it.copy(streaming = false, metrics = Metrics()) }
@@ -176,6 +220,7 @@ object StreamController {
         val new = transform(old)
         if (new == old) return
         ui.update { it.copy(settings = new) }
+        audio?.muted = new.micMuted
         worker.execute {
             val cameraChanged = new.frontCamera != old.frontCamera
             val encodeChanged = new.resolution != old.resolution || new.fps != old.fps
@@ -202,6 +247,7 @@ object StreamController {
 
         if (!state.streaming && preview == null) {
             cam.close()
+            ui.update { it.copy(photoAvailable = false) }
             return
         }
         if (!state.cameraPermission) return
@@ -228,7 +274,18 @@ object StreamController {
             cam.openBlocking(s.frontCamera)?.let { failLocked(it); return }
         }
         val targets = listOfNotNull(preview, encoder?.inputSurface)
-        cam.startSessionBlocking(targets, s)?.let { failLocked(it); return }
+
+        // Photos use the video size while streaming (safe on every phone), the biggest size otherwise.
+        val limit = if (state.streaming) Size(s.resolution.width, s.resolution.height) else null
+        val photoSize = cam.choosePhotoSize(s.frontCamera, limit)
+        var err = cam.startSessionBlocking(targets, s, photoSize)
+        if (err != null && photoSize != null) {
+            // Some phones cannot do video + photo together at this mode: keep streaming without photos.
+            err = cam.startSessionBlocking(targets, s, null)
+        }
+        err?.let { failLocked(it); return }
+
+        ui.update { it.copy(photoAvailable = cam.hasPhoto()) }
         encoder?.requestKeyFrame()
     }
 }

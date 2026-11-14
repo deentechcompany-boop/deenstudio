@@ -3,6 +3,7 @@ package com.deenstudio.app.core
 import android.hardware.camera2.CameraMetadata
 
 const val STREAM_PORT = 8000
+const val AUDIO_PORT = 8002
 
 enum class Resolution(val label: String, val width: Int, val height: Int, val baseBitrate: Int) {
     P720("720p", 1280, 720, 5_000_000),
@@ -27,7 +28,11 @@ data class StudioSettings(
     val focusPosition: Float = 0.2f,
     /** Exposure compensation in camera steps (see UiState.evStep for the size of one step). */
     val exposureComp: Int = 0,
-    val whiteBalance: WhiteBalance = WhiteBalance.AUTO
+    val whiteBalance: WhiteBalance = WhiteBalance.AUTO,
+    /** Send the phone microphone to the PC (takes effect on the next Start stream). */
+    val micOn: Boolean = true,
+    /** Silences the microphone while streaming (the stream keeps running). */
+    val micMuted: Boolean = false
 ) {
     /** Target video bitrate in bits per second. */
     val bitrate: Int get() = (resolution.baseBitrate * if (fps >= 60) 1.6 else 1.0).toInt()
@@ -45,6 +50,9 @@ data class UiState(
     val settings: StudioSettings = StudioSettings(),
     val streaming: Boolean = false,
     val cameraPermission: Boolean = false,
+    val micPermission: Boolean = false,
+    val photoAvailable: Boolean = false,
+    val photoMessage: String? = null,
     val usbPlugged: Boolean = false,
     val adbEnabled: Boolean = false,
     val metrics: Metrics = Metrics(),

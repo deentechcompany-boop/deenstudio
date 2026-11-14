@@ -1,5 +1,6 @@
 package com.deenstudio.app.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,12 +8,14 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.deenstudio.app.core.STREAM_PORT
 import com.deenstudio.app.core.StreamController
 import com.deenstudio.app.ui.MainActivity
@@ -41,7 +44,16 @@ class StreamService : Service() {
 
     private fun begin() {
         createChannel()
-        val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0
+        var type = 0
+        if (Build.VERSION.SDK_INT >= 29) {
+            type = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+            // Android 14 refuses the microphone type unless the permission is already granted.
+            val micAllowed = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+            if (micAllowed && StreamController.ui.value.settings.micOn) {
+                type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            }
+        }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), type)
 
         if (wakeLock == null) {
